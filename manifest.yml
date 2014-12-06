@@ -1,0 +1,10 @@
+applications:
+- name: survey
+  mem: 64M
+  stackato:
+    env:
+      GOVERSION:
+        default: 1.2
+    ignores:
+    - .git
+    - bin
