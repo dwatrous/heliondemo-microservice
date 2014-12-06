@@ -1,0 +1,12 @@
+[
+	{
+		"input": "select",
+		"name": "dogtype",
+		"options": {
+			"Mastiff": "mastiff",
+			"Terrier": "terrier",
+			"Border Collie": "bordercollie"
+		}
+	}
+]
+
