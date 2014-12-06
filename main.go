@@ -18,7 +18,7 @@ var (
 	mongosettings mongo.ConnectionURL
 	mongodb       db.Database
 
-	listen       = flag.String("l", os.Getenv("PORT"), "listener address")
+	listen       = flag.String("l", ":" + os.Getenv("PORT"), "listener address")
 	mongoaddress = flag.String("mongo", "127.0.0.1", "mongo address")
 	mongodbname  = flag.String("dbname", "surveys", "mongo database name")
 )
