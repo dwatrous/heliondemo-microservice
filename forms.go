@@ -37,13 +37,17 @@ var (
 </select>
 `
 
+	textBase = `<input type="text" name="{{ .Name }}">`
+
 	formTmpl   *template.Template
 	selectTmpl *template.Template
+	textTmpl   *template.Template
 )
 
 func init() {
 	formTmpl = template.Must(template.New("form").Funcs(template.FuncMap{"printinput": printInput}).Parse(formBase))
 	selectTmpl = template.Must(template.New("select").Parse(selectBase))
+	textTmpl = template.Must(template.New("text").Parse(textBase))
 }
 
 func printInput(f *FormElement) (template.HTML, error) {
@@ -51,6 +55,8 @@ func printInput(f *FormElement) (template.HTML, error) {
 	buf := new(bytes.Buffer)
 
 	switch f.Input {
+	case "text":
+		err = textTmpl.Execute(buf, f)
 	case "select":
 		err = selectTmpl.Execute(buf, f)
 	default:
