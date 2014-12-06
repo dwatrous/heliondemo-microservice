@@ -17,7 +17,7 @@ var (
 	mongosettings mongo.ConnectionURL
 	mongodb       db.Database
 
-	listen       = flag.String("l", ":8080", "listener address")
+	listen       = flag.String("l", os.Getenv("PORT"), "listener address")
 	mongoaddress = flag.String("mongo", "127.0.0.1", "mongo address")
 	mongodbname  = flag.String("dbname", "surveys", "mongo database name")
 )
@@ -114,6 +114,7 @@ func main() {
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-
+	
+	fmt.Printf("Listening on %v\n", *listen)
 	log.Fatal(s.ListenAndServe())
 }

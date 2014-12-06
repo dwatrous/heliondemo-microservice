@@ -1,6 +1,7 @@
 applications:
 - name: survey
   mem: 64M
+  disk: 512M
   stackato:
     env:
       GOVERSION:
