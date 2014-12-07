@@ -192,7 +192,7 @@ func main() {
 
 	mongodb, err = db.Open(mongo.Adapter, mongosettings)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to connect to mongo at %s: %s", mongosettings.Address, err)
 	}
 
 	fs := new(FormServer)
