@@ -66,9 +66,9 @@ func (fs *FormServer) SurveyPost(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "error retrieving collection: "+err.Error(), 400)
 			return
 		}
-	} else {
-		err = col.Truncate()
 
+		// should create if not exist?
+		err = col.Truncate()
 		if err != nil {
 			http.Error(w, "error truncating collection: "+err.Error(), 400)
 			return
@@ -143,9 +143,9 @@ func (fs *FormServer) Result(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "error retrieving collection: "+err.Error(), 400)
 			return
 		}
-	} else {
-		err = col.Truncate()
 
+		// should create if not exist?
+		err = col.Truncate()
 		if err != nil {
 			http.Error(w, "error truncating collection: "+err.Error(), 400)
 			return
