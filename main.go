@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"strconv"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,15 @@ import (
 
 	"upper.io/db"
 	"upper.io/db/mongo"
+
+	"github.com/cloudfoundry-community/go-cfenv"
 )
+
+// string to port number
+func atop(s string) uint {
+	p, _ := strconv.Atoi(s)
+	return uint(p)
+}
 
 func GetenvDefault(key, dfault string) string {
 	r := os.Getenv("PORT")
@@ -24,12 +33,9 @@ func GetenvDefault(key, dfault string) string {
 }
 
 var (
+	appenv        *cfenv.App
 	mongosettings mongo.ConnectionURL
 	mongodb       db.Database
-
-	listen       = flag.String("l", ":"+GetenvDefault("PORT", "8080"), "listener address")
-	mongoaddress = flag.String("mongo", "127.0.0.1", "mongo address")
-	mongodbname  = flag.String("dbname", "surveys", "mongo database name")
 )
 
 func SurveyFile(name string) string {
@@ -55,10 +61,18 @@ func (fs *FormServer) SurveyPost(w http.ResponseWriter, r *http.Request) {
 	// the only possible error here is that the collection doesn't exist.
 	// in that case, inserting will create it (for mongo driver)
 	col, err := mongodb.Collection("results")
-	//if err != db.ErrCollectionDoesNotExist {
 	if err != nil {
-		http.Error(w, "retrieving mongo collection: "+err.Error(), 400)
-		return
+		if err != db.ErrCollectionDoesNotExists {
+			http.Error(w, "error retrieving collection: "+err.Error(), 400)
+			return
+		}
+	} else {
+		err = col.Truncate()
+
+		if err != nil {
+			http.Error(w, "error truncating collection: "+err.Error(), 400)
+			return
+		}
 	}
 
 	doc := map[string]interface{}{}
@@ -124,10 +138,18 @@ func (fs *FormServer) Result(w http.ResponseWriter, r *http.Request) {
 	surveyname := r.URL.Path[8:]
 
 	col, err := mongodb.Collection("results")
-	//if err != db.ErrCollectionDoesNotExist {
 	if err != nil {
-		http.Error(w, "retrieving mongo collection: "+err.Error(), 400)
-		return
+		if err != db.ErrCollectionDoesNotExists {
+			http.Error(w, "error retrieving collection: "+err.Error(), 400)
+			return
+		}
+	} else {
+		err = col.Truncate()
+
+		if err != nil {
+			http.Error(w, "error truncating collection: "+err.Error(), 400)
+			return
+		}
 	}
 
 	var res db.Result
@@ -148,13 +170,26 @@ func (fs *FormServer) Result(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var err error
+
 	flag.Parse()
 
-	mongosettings.Database = *mongodbname
-	mongosettings.Address = db.Host(*mongoaddress)
+	appenv, err = cfenv.Current()
+	if err != nil {
+		log.Fatalf("can't initialize app environment: %s", err)
+	}
 
-	// XXX disabled for now since we don't insert yet.
-	var err error
+	srvname := "mongo-heliondemo"
+	mongosrv, err := appenv.Services.WithName(srvname)
+	if err != nil {
+		log.Fatalf("missing service %q: %s", srvname, err)
+	}
+
+	mongosettings.Database = mongosrv.Credentials["database"]
+	mongosettings.Address = db.HostPort(mongosrv.Credentials["host"], atop(mongosrv.Credentials["port"]))
+	mongosettings.User = mongosrv.Credentials["user"]
+	mongosettings.Password = mongosrv.Credentials["pass"]
+
 	mongodb, err = db.Open(mongo.Adapter, mongosettings)
 	if err != nil {
 		log.Fatal(err)
@@ -166,14 +201,15 @@ func main() {
 	mux.HandleFunc("/survey/", fs.Survey)
 	mux.HandleFunc("/result/", fs.Result)
 
+	listen := ":" + GetenvDefault("PORT", "8080")
 	s := &http.Server{
-		Addr:           *listen,
+		Addr:           listen,
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	fmt.Printf("Listening on %v\n", *listen)
+	fmt.Printf("Listening on %v\n", listen)
 	log.Fatal(s.ListenAndServe())
 }
