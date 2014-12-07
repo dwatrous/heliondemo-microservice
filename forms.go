@@ -7,8 +7,11 @@ import (
 )
 
 type FormElement struct {
-	Input   string            `json:"input", bson:"input"`
-	Name    string            `json:"name", bson:"name"`
+	Input string `json:"input", bson:"input"` // Input type, e.g. select, input
+	Name  string `json:"name", bson:"name"`   // Input name, used in POST and for mongo key
+	Label string `json:"label", bson:"label"` // Input label, used for rendering the HTML template
+
+	// Options, e.g. for select. The
 	Options map[string]string `json:"options", bson:"options"`
 }
 
@@ -21,7 +24,7 @@ var (
 		<div id="survey">
 			<form method="post">
 			{{ range . }}
-				{{ printinput . }}
+				{{ printinput . }} <br />
 			{{ end }}
 			<input type="submit" value="Submit" />
 			</form>
@@ -30,14 +33,17 @@ var (
 </html>
 `
 
-	selectBase = `<select name="{{ .Name }}">
-{{ range $label, $value := .Options }}
+	selectBase = `<label for="{{ .Name }}">{{ .Label }}</label>
+<select id="{{ .Name }}" name="{{ .Name }}">
+{{ range $value, $label := .Options }}
 	<option value="{{ $value }}">{{ $label }}</option>
 {{ end }}
 </select>
 `
 
-	textBase = `<input type="text" name="{{ .Name }}">`
+	textBase = `<label for="{{ .Name }}">{{ .Label }}</label>
+<input type="text" id="{{ .Name }}" name="{{ .Name }}">
+`
 
 	formTmpl   *template.Template
 	selectTmpl *template.Template

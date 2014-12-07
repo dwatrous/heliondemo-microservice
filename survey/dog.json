@@ -2,10 +2,11 @@
 	{
 		"input": "select",
 		"name": "dogtype",
+		"label": "Favorite type of dog",
 		"options": {
-			"Mastiff": "mastiff",
-			"Terrier": "terrier",
-			"Border Collie": "bordercollie"
+			"mastiff": "Mastiff",
+			"terrier": "Terrier",
+			"bordercollie": "Border Collie"
 		}
 	}
 ]
