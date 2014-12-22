@@ -48,8 +48,104 @@ $GOPATH/src/github.com/dwatrous/heliondemo-microservice/heliondemo-microservice
 ### Verify the service is running
 
 Render a survey http://localhost:8080/survey/dog which corresponds to survey/dog.json
-Extract submitted surveys http://localhost:8080/result/dog for all results of dogs survey
+Extract submitted surveys http://localhost:8080/result/dog for all results of the dog survey
+
+# MongoDB Required
+The MongoDB requirement can be satisfied by creating another VM using the Ubunutu 14.04 image and running the following commands.
+
+```
+#export http_proxy=http://proxy.company.com:8080
+#export https_proxy=https://proxy.company.com:8080
+sudo -E apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
+sudo -E apt-get update
+sudo -E apt-get -y install mongodb-org
+```
+
+At this point MongoDB is running, but by default it will only accept connections from localhost. To change this, it's necessary to edit the file **/etc/mongod.conf**. Update the line which declares **bind_ip** by either commenting it out or changing the value to **0.0.0.0**. After making the change, restart the service.
+
+```
+sudo service mongod restart
+```
+
+For convenience, allocate a floating IP address and associate it with the MongoDB VM so that this can be injected into the deployed instance.
 
 # Deploy to Helion
 
-# MongoDB Required
+### Setup proxy
+If your HP Helion Development Platform installation requires a proxy to access the internet, the following kato command can be run from a DEA or the Cloud Controller:
+
+```
+helion@watroushdp-dea-2:~$ kato op upstream_proxy set proxy.company.com:8080
+
+Upstream proxy set to: proxy.houston.hp.com:8080
+
+Restart your DEA nodes to effect the changes
+
+Polipo must be restarted for it to take effect:
+        sudo /etc/init.d/polipo restart
+
+helion@watroushdp-dea-2:~$ sudo /etc/init.d/polipo restart
+Restarting polipo: polipo.
+```
+
+### Add MongoDB as a user provided service
+Use the **create-service** command to add MnogoDB credentials and connection details as a service with the name **mongo-heliondemo**
+
+```
+ubuntu@hdp-install:~$ helion create-service user-provided mongo-heliondemo
+Which credentials to use for connections [hostname, port, password]: host, port, database
+host: 15.50.137.94
+port: 27017
+database: survey
+Creating new service ... OK
+```
+
+### Push the code
+Change into the cloned repository run *helion push*. When prompted to Bind existing services, choose "Y". Select the user provided service from the list to bind it to this application. 
+
+```
+ubuntu@hdp-install:~/heliondemo-microservice$ helion push
+Would you like to deploy from the current directory ? [Yn]:
+Using manifest file "manifest.yml"
+Application Deployed URL [survey.15.50.137.82.xip.io]:
+Application Url:   http://survey.15.50.137.82.xip.io
+Enter GOVERSION [1.2]:
+  Adding Environment Variable [GOVERSION=1.2]
+Creating Application [survey] as [https://api.15.50.137.82.xip.io -> default -> default -> survey] ... OK
+  Map http://survey.15.50.137.82.xip.io ... OK
+Bind existing services to 'survey' ? [yN]: y
+Which one ?
+1. mongo-heliondemo
+Choose:? 1
+  Binding mongo-heliondemo to survey ... OK
+Bind another ? [yN]:
+Create services to bind to 'survey' ? [yN]:
+Uploading Application [survey] ...
+  Checking for bad links ... 18 OK
+  Copying to temp space ... 17 OK
+  Checking for available resources ...  OK
+  Processing resources ... OK
+  Packing application ... OK
+  Uploading (1K) ... 100% OK
+Push Status: OK
+Starting Application [survey] ...
+stackato[dea_ng]: Staging application
+staging: -----> Downloaded app package (9.4M)
+staging: -----> Installing Go 1.2...
+staging: -----> Running: go get -tags heroku ./...
+staging: -----> Uploading droplet (12M)
+stackato[dea_ng]: Completed staging application
+stackato[dea_ng.0]: Launching web process: bin/survey
+app[stdout.0]: Listening on :46829
+OK
+http://survey.15.50.137.82.xip.io/ deployed
+```
+
+### Verify the service is running
+
+Assuming the above output, the service can be verified as follows.
+
+Render a survey http://survey.15.50.137.82.xip.io/survey/dog which corresponds to survey/dog.json
+
+Extract submitted surveys http://survey.15.50.137.82.xip.io/result/dog for all results of the dog survey
