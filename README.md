@@ -78,7 +78,7 @@ If your HP Helion Development Platform installation requires a proxy to access t
 ```
 helion@watroushdp-dea-2:~$ kato op upstream_proxy set proxy.company.com:8080
 
-Upstream proxy set to: proxy.houston.hp.com:8080
+Upstream proxy set to: proxy.company.com:8080
 
 Restart your DEA nodes to effect the changes
 
